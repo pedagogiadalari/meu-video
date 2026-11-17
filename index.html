@@ -1,40 +1,88 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Redirecionando...</title>
-    <style>
-        body { background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; color: #fff; font-family: sans-serif; }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f12">
+<title>Meu vídeo</title>
+<style>
+  :root { --bg:#0f0f12; --fg:#f4f4f5; --muted:#a1a1aa; --card:#000; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--fg);
+    font-family:system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:16px; padding:56px 16px 24px; }
+  h1 { font-size:1.25rem; margin:0; text-align:center; line-height:1.3; }
+  p { color:var(--muted); margin:0; font-size:.95rem; text-align:center; max-width:640px; }
+  .player { width:100%; max-width:760px; aspect-ratio:16/9; background:var(--card);
+    border-radius:14px; overflow:hidden; }
+  .player.vertical { aspect-ratio:9/16; max-width:min(420px, calc((100vh - 170px) * 9 / 16)); }
+  .player iframe, .player video { width:100%; height:100%; border:0; display:block; background:#000; }
+  .vazio { display:flex; align-items:center; justify-content:center; padding:16px;
+    color:var(--muted); text-align:center; }
+</style>
 </head>
 <body>
-    <p>Abrindo Shopee...</p>
+<main>
+  <h1 id="titulo"></h1>
+  <div class="player" id="player"></div>
+  <p id="legenda"></p>
+</main>
+<script>
+  // ================= EDITE SÓ AQUI =================
+  // Cole o link do seu vídeo do YouTube entre as aspas.
+  // Serve link normal, youtu.be, Shorts ou link direto de .mp4
+  const LINK_DO_VIDEO = "https://www.youtube.com/watch?v=ALZHF5UqnU4";
+  const TITULO  = "Assista ao meu vídeo";
+  const LEGENDA = "";
+  // =================================================
 
-    <script>
-        // ================= EDITE AQUI =================
-        // Coloque seu link de afiliado completo aqui
-        const SEU_LINK_AFILIADO = "https://s.shopee.com.br/30pdeY1FJc?share_channel_code=1";
-        // ==============================================
+  document.getElementById("titulo").textContent = TITULO;
+  document.getElementById("legenda").textContent = LEGENDA;
+  const player = document.getElementById("player");
 
-        function redirecionar() {
-            // Adiciona parâmetros extras para garantir o rastreamento (smtt=0.0.9 para mobile)
-            let url = SEU_LINK_AFILIADO;
-            if (!url.includes("?")) url += "?";
-            else url += "&";
-            url += "smtt=0.0.9&utm_campaign=affiliates&utm_medium=referral";
+  function lerYoutube(link) {
+    try {
+      const u = new URL(link.trim());
+      const host = u.hostname.replace(/^(www|m|music)\./, "");
+      let id = null;
+      if (host === "youtu.be") id = u.pathname.slice(1).split("/")[0];
+      else if (host === "youtube.com" || host === "youtube-nocookie.com") {
+        id = u.searchParams.get("v");
+        const m = u.pathname.match(/^\/(shorts|embed|live|v)\/([\w-]+)/);
+        if (!id && m) id = m[2];
+      }
+      if (!id || !/^[\w-]{6,20}$/.test(id)) return null;
+      return { id, vertical: u.pathname.startsWith("/shorts/") };
+    } catch (e) { return null; }
+  }
 
-            // Tenta abrir o App da Shopee via Deep Link (se instalado)
-            window.location.href = url.replace("https://s.shopee.com.br", "shopeesg://");
+  function mostrarVazio(texto) {
+    player.classList.add("vazio");
+    player.textContent = texto;
+  }
 
-            // Fallback: Se não abrir o app em 2 segundos, abre no navegador
-            setTimeout(function() {
-                window.location.replace(url);
-            }, 2000);
-        }
+  const link = LINK_DO_VIDEO.trim();
+  const yt = link && lerYoutube(link);
 
-        // Executa o redirecionamento imediato
-        redirecionar();
-    </script>
+  if (!link) {
+    mostrarVazio("Vídeo em breve.");
+  } else if (yt) {
+    if (yt.vertical) player.classList.add("vertical");
+    const f = document.createElement("iframe");
+    f.src = "https://www.youtube.com/embed/" + yt.id + "?autoplay=1&playsinline=1&rel=0";
+    f.title = TITULO;
+    f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    f.allowFullscreen = true;
+    f.referrerPolicy = "strict-origin-when-cross-origin";
+    player.appendChild(f);
+  } else if (/\.(mp4|webm|mov)(\?|#|$)/i.test(link)) {
+    const v = document.createElement("video");
+    v.src = link; v.controls = true; v.autoplay = true; v.playsInline = true;
+    player.appendChild(v);
+  } else {
+    mostrarVazio("Não consegui ler o link do vídeo. Confira o link no arquivo index.html.");
+  }
+</script>
 </body>
 </html>
